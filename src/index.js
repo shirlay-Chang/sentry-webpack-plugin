@@ -118,8 +118,7 @@ function attachAfterCodeGenerationHook(compiler, options) {
   (function (){
   var globalThis = (typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {});
   globalThis.SENTRY_RELEASES = globalThis.SENTRY_RELEASES || {};
-  globalThis.SENTRY_RELEASES["${options.project}@${
-                  options.org
+  globalThis.SENTRY_RELEASES["${options.project}@${options.org
                 }"] = {"id":"${version}"};
   })();`
               )
@@ -582,13 +581,16 @@ class SentryCliPlugin {
     });
 
     attachAfterEmitHook(compiler, (compilation, cb) => {
-      if (!this.options.include || !this.options.include.length) {
-        ensure(compilerOptions, 'output', Object);
-        if (compilerOptions.output.path) {
-          this.options.include = [compilerOptions.output.path];
+      // TODO 需要改成其他更优雅的方式，保证UploadPlugin onFinish执行完成后再执行下列代码
+      setTimeout(() => {
+        if (!this.options.include || !this.options.include.length) {
+          ensure(compilerOptions, 'output', Object);
+          if (compilerOptions.output.path) {
+            this.options.include = [compilerOptions.output.path];
+          }
         }
-      }
-      this.finalizeRelease(compilation).then(() => cb());
+        this.finalizeRelease(compilation).then(() => cb());
+      }, 8000)
     });
   }
 }
